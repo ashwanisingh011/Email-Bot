@@ -1,11 +1,35 @@
-import dotenv from 'dotenv'
+import dns from 'node:dns';
+// Force IPv4 first to prevent IPv6 socket hangs in GitHub Actions / Docker runners
+dns.setDefaultResultOrder('ipv4first');
+
+import dotenv from 'dotenv';
 dotenv.config();
 
 import { fetchDailyActivity } from './github';
 import { generateReport } from './generator';
 import { sendDailyEmail } from './mailer';
 
+function validateEnv() {
+  const required = [
+    'GH_PAT',
+    'GEMINI_API_KEY',
+    'SENDER_EMAIL',
+    'GMAIL_APP_PASSWORD',
+    'GITHUB_USERNAME',
+    'RECIPIENTS',
+  ];
+
+  const missing = required.filter((key) => !process.env[key]);
+  if (missing.length > 0) {
+    throw new Error(
+      `Missing required environment variable(s): ${missing.join(', ')}. Please check your .env file or GitHub Secrets.`
+    );
+  }
+}
+
 async function main() {
+  validateEnv();
+
   const pat = process.env.GH_PAT!;
   const geminiKey = process.env.GEMINI_API_KEY!;
   const sender = process.env.SENDER_EMAIL!;
