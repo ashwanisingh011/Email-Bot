@@ -5,7 +5,9 @@ async function callWithRetry(fn: () => Promise<any>, retries: number = 3, delayM
     try {
         return await fn();
     } catch (err: any) {
-        if(retries > 0 && (err?.status === 503 || err?.status === 429)){
+        const isNetworkError = err?.name === "TypeError" || err?.message?.includes("fetch failed");
+        const isRateOrBusy = err?.status === 503 || err?.status === 429;
+        if(retries > 0 && (isRateOrBusy || isNetworkError)){
             console.warn(`Temporary API busy (${err?.status}). Retrying in ${delayMs / 1000}s...`);
             await new Promise((res) => setTimeout(res, delayMs));
             return callWithRetry(fn, retries - 1, delayMs * 2);
