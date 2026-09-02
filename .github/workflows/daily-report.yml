@@ -3,7 +3,7 @@ name: Automated Daily Status Report
 on:
   schedule:
     # 6:45 PM IST = 1:15 PM UTC (13:15 UTC) Monday to Friday
-    - cron: '15 13 * * 1-5'
+    - cron: '0 16 * * *'
   workflow_dispatch: # Allows you to manually trigger it from the GitHub Actions tab anytime
 
 jobs:
