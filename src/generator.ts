@@ -8,7 +8,10 @@ async function callWithRetry(fn: () => Promise<any>, retries: number = 3, delayM
         const isNetworkError = err?.name === "TypeError" || err?.message?.includes("fetch failed");
         const isRateOrBusy = err?.status === 503 || err?.status === 429;
         if(retries > 0 && (isRateOrBusy || isNetworkError)){
-            console.warn(`Temporary API busy (${err?.status}). Retrying in ${delayMs / 1000}s...`);
+            const errorDesc = isRateOrBusy
+                ? `API rate limited or busy (${err?.status})`
+                : `Network connectivity issue (${err?.message || "fetch failed"})`;
+            console.warn(`${errorDesc}. Retrying in ${delayMs / 1000}s...`);
             await new Promise((res) => setTimeout(res, delayMs));
             return callWithRetry(fn, retries - 1, delayMs * 2);
         }
@@ -18,7 +21,11 @@ async function callWithRetry(fn: () => Promise<any>, retries: number = 3, delayM
 
 export async function generateReport(apiKey: string, activity: ActivityReport): Promise<{subject: string, body: string}> {
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({model: "gemini-3.6-flash"});
+    const modelName = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+    const model = genAI.getGenerativeModel(
+        { model: modelName },
+        { timeout: 30000 } // 30s timeout prevents multi-minute hangs
+    );
 
     const now = new Date();
 
