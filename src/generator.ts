@@ -1,9 +1,22 @@
 import {GoogleGenerativeAI} from "@google/generative-ai";
 import {ActivityReport} from "./github";
 
+async function callWithRetry(fn: () => Promise<any>, retries: number = 3, delayMs = 2000): Promise<any> {
+    try {
+        return await fn();
+    } catch (err: any) {
+        if(retries > 0 && (err?.status === 503 || err?.status === 429)){
+            console.warn(`Temporary API busy (${err?.status}). Retrying in ${delayMs / 1000}s...`);
+            await new Promise((res) => setTimeout(res, delayMs));
+            return callWithRetry(fn, retries - 1, delayMs * 2);
+        }
+        throw err;
+    }
+}
+
 export async function generateReport(apiKey: string, activity: ActivityReport): Promise<{subject: string, body: string}> {
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({model: "gemini-2.5-flash"});
+    const model = genAI.getGenerativeModel({model: "gemini-3.6-flash"});
 
     const now = new Date();
 
@@ -51,12 +64,13 @@ Subject format: "Daily Status Report - ${dateFormattedSubject} - Ashwani Singh (
 `;
 
 
-const result = await model.generateContent({
-    contents: [{role: "user", parts: [{text: prompt}]}],
-    generationConfig: {responseMimeType: "application/json"},
-})
+const result = await callWithRetry(() =>
+    model.generateContent({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: { responseMimeType: "application/json" },
+    })
+  );
 
-const parsed = JSON.parse(result.response.text());
-return parsed;
+return JSON.parse(result.response.text());
 }
 
