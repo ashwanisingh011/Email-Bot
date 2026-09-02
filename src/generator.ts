@@ -21,7 +21,7 @@ async function callWithRetry(fn: () => Promise<any>, retries: number = 3, delayM
 
 export async function generateReport(apiKey: string, activity: ActivityReport): Promise<{subject: string, body: string}> {
     const genAI = new GoogleGenerativeAI(apiKey);
-    const modelName = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+    const modelName = process.env.GEMINI_MODEL || "gemini-3.6-flash";
     const model = genAI.getGenerativeModel(
         { model: modelName },
         { timeout: 30000 } // 30s timeout prevents multi-minute hangs
