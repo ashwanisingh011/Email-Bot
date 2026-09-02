@@ -1,17 +1,42 @@
 import {GoogleGenerativeAI} from "@google/generative-ai";
 import {ActivityReport} from "./github";
 
+function getErrorReason(err: any): { isRetriable: boolean; reason: string } {
+    const name = err?.name || "";
+    const msg = err?.message || "";
+    const status = err?.status;
+
+    const isTimeout =
+        name === "AbortError" ||
+        name === "GoogleGenerativeAIAbortError" ||
+        msg.includes("aborted") ||
+        msg.includes("timeout");
+    const isNetwork =
+        name === "TypeError" ||
+        msg.includes("fetch failed") ||
+        msg.includes("ECONNRESET") ||
+        msg.includes("ETIMEDOUT");
+    const isBusy = status === 503 || status === 429;
+
+    if (isBusy) {
+        return { isRetriable: true, reason: `API rate limited or server busy (${status})` };
+    }
+    if (isTimeout) {
+        return { isRetriable: true, reason: `Request timed out (${msg || name})` };
+    }
+    if (isNetwork) {
+        return { isRetriable: true, reason: `Network connectivity issue (${msg || name})` };
+    }
+    return { isRetriable: false, reason: msg || name || "Unknown error" };
+}
+
 async function callWithRetry(fn: () => Promise<any>, retries: number = 3, delayMs = 5000): Promise<any> {
     try {
         return await fn();
     } catch (err: any) {
-        const isNetworkError = err?.name === "TypeError" || err?.message?.includes("fetch failed");
-        const isRateOrBusy = err?.status === 503 || err?.status === 429;
-        if(retries > 0 && (isRateOrBusy || isNetworkError)){
-            const errorDesc = isRateOrBusy
-                ? `API rate limited or busy (${err?.status})`
-                : `Network connectivity issue (${err?.message || "fetch failed"})`;
-            console.warn(`${errorDesc}. Retrying in ${delayMs / 1000}s...`);
+        const { isRetriable, reason } = getErrorReason(err);
+        if (retries > 0 && isRetriable) {
+            console.warn(`${reason}. Retrying in ${delayMs / 1000}s...`);
             await new Promise((res) => setTimeout(res, delayMs));
             return callWithRetry(fn, retries - 1, delayMs * 2);
         }
@@ -84,32 +109,44 @@ Subject format: "Daily Status Report - ${dateFormattedSubject} - Ashwani Singh (
             console.log(`Generating report using model: ${modelName}...`);
             const model = genAI.getGenerativeModel(
                 { model: modelName },
-                { timeout: 30000 } // 30s timeout prevents multi-minute hangs
+                { timeout: 120000 } // 120s timeout allows deep generation under peak server load
             );
 
             const result = await callWithRetry(
                 () =>
                     model.generateContent({
                         contents: [{ role: "user", parts: [{ text: prompt }] }],
-                        generationConfig: { responseMimeType: "application/json" },
+                        generationConfig: {
+                            responseMimeType: "application/json",
+                            temperature: 0.2,
+                            maxOutputTokens: 2500,
+                        },
                     }),
-                3, // 3 retries
-                5000 // 5s initial backoff gives Google load balancers time to clear spikes (5s -> 10s -> 20s)
+                2, // 2 retries per model
+                5000 // 5s initial backoff
             );
 
             return JSON.parse(result.response.text());
         } catch (err: any) {
             lastError = err;
+            const name = err?.name || "";
+            const msg = err?.message || "";
+            const status = err?.status;
+
             const isRecoverable =
-                err?.status === 503 ||
-                err?.status === 429 ||
-                err?.status === 404 ||
-                err?.name === "TypeError" ||
-                err?.message?.includes("fetch failed");
+                status === 503 ||
+                status === 429 ||
+                status === 404 ||
+                name === "AbortError" ||
+                name === "GoogleGenerativeAIAbortError" ||
+                name === "TypeError" ||
+                msg.includes("aborted") ||
+                msg.includes("timeout") ||
+                msg.includes("fetch failed");
 
             if (isRecoverable && modelName !== modelsToTry[modelsToTry.length - 1]) {
                 console.warn(
-                    `Model ${modelName} unavailable (${err?.status || err?.message}). Falling back to next available model...`
+                    `Model ${modelName} encountered issue (${status || msg || name}). Falling back to next available model...`
                 );
                 continue;
             }
