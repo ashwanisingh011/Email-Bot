@@ -1,7 +1,7 @@
 import {GoogleGenerativeAI} from "@google/generative-ai";
 import {ActivityReport} from "./github";
 
-async function callWithRetry(fn: () => Promise<any>, retries: number = 3, delayMs = 2000): Promise<any> {
+async function callWithRetry(fn: () => Promise<any>, retries: number = 3, delayMs = 5000): Promise<any> {
     try {
         return await fn();
     } catch (err: any) {
@@ -67,14 +67,13 @@ Return a strictly valid JSON object with keys "subject" and "body".
 Subject format: "Daily Status Report - ${dateFormattedSubject} - Ashwani Singh (Brief Technical Highlight)"
 `;
 
-    // Cascade through models if Google API is experiencing 503 high demand or 429 rate limit
+    // Cascade through active Gemini 3 family models if Google API is experiencing 503 high demand or 429 rate limit
     const modelsToTry = Array.from(
         new Set([
             process.env.GEMINI_MODEL,
             "gemini-3.6-flash",
             "gemini-3.7-flash",
-            "gemini-2.0-flash",
-            "gemini-1.5-flash"
+            "gemini-3.5-flash"
         ].filter(Boolean) as string[])
     );
 
@@ -88,13 +87,14 @@ Subject format: "Daily Status Report - ${dateFormattedSubject} - Ashwani Singh (
                 { timeout: 30000 } // 30s timeout prevents multi-minute hangs
             );
 
-            const result = await callWithRetry(() =>
-                model.generateContent({
-                    contents: [{ role: "user", parts: [{ text: prompt }] }],
-                    generationConfig: { responseMimeType: "application/json" },
-                }),
-                2, // 2 retries per model
-                2000
+            const result = await callWithRetry(
+                () =>
+                    model.generateContent({
+                        contents: [{ role: "user", parts: [{ text: prompt }] }],
+                        generationConfig: { responseMimeType: "application/json" },
+                    }),
+                3, // 3 retries
+                5000 // 5s initial backoff gives Google load balancers time to clear spikes (5s -> 10s -> 20s)
             );
 
             return JSON.parse(result.response.text());
