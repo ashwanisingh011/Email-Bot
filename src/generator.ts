@@ -21,11 +21,6 @@ async function callWithRetry(fn: () => Promise<any>, retries: number = 3, delayM
 
 export async function generateReport(apiKey: string, activity: ActivityReport): Promise<{subject: string, body: string}> {
     const genAI = new GoogleGenerativeAI(apiKey);
-    const modelName = process.env.GEMINI_MODEL || "gemini-3.6-flash";
-    const model = genAI.getGenerativeModel(
-        { model: modelName },
-        { timeout: 30000 } // 30s timeout prevents multi-minute hangs
-    );
 
     const now = new Date();
 
@@ -72,14 +67,56 @@ Return a strictly valid JSON object with keys "subject" and "body".
 Subject format: "Daily Status Report - ${dateFormattedSubject} - Ashwani Singh (Brief Technical Highlight)"
 `;
 
+    // Cascade through models if Google API is experiencing 503 high demand or 429 rate limit
+    const modelsToTry = Array.from(
+        new Set([
+            process.env.GEMINI_MODEL,
+            "gemini-3.6-flash",
+            "gemini-3.7-flash",
+            "gemini-2.0-flash",
+            "gemini-1.5-flash"
+        ].filter(Boolean) as string[])
+    );
 
-const result = await callWithRetry(() =>
-    model.generateContent({
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      generationConfig: { responseMimeType: "application/json" },
-    })
-  );
+    let lastError: any;
 
-return JSON.parse(result.response.text());
+    for (const modelName of modelsToTry) {
+        try {
+            console.log(`Generating report using model: ${modelName}...`);
+            const model = genAI.getGenerativeModel(
+                { model: modelName },
+                { timeout: 30000 } // 30s timeout prevents multi-minute hangs
+            );
+
+            const result = await callWithRetry(() =>
+                model.generateContent({
+                    contents: [{ role: "user", parts: [{ text: prompt }] }],
+                    generationConfig: { responseMimeType: "application/json" },
+                }),
+                2, // 2 retries per model
+                2000
+            );
+
+            return JSON.parse(result.response.text());
+        } catch (err: any) {
+            lastError = err;
+            const isRecoverable =
+                err?.status === 503 ||
+                err?.status === 429 ||
+                err?.status === 404 ||
+                err?.name === "TypeError" ||
+                err?.message?.includes("fetch failed");
+
+            if (isRecoverable && modelName !== modelsToTry[modelsToTry.length - 1]) {
+                console.warn(
+                    `Model ${modelName} unavailable (${err?.status || err?.message}). Falling back to next available model...`
+                );
+                continue;
+            }
+            throw err;
+        }
+    }
+
+    throw lastError;
 }
 
