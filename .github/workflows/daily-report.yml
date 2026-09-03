@@ -32,7 +32,12 @@ jobs:
           GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}
           SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
-          TARGET_REPOS: "ashwanisingh011/Email-Bot"
-          GITHUB_USERNAME: "ashwanisingh011"
-          RECIPIENTS: "ashwanisingh9737@gmail.com,ashwanisingh9328@gmail.com"
+          TARGET_REPOS: ${{ secrets.TARGET_REPOS }}
+          GH_USERNAME: ${{ secrets.GITHUB_USERNAME }}
+          RECIPIENTS: ${{ secrets.RECIPIENTS }}
+          DEVELOPER_NAME: ${{ secrets.DEVELOPER_NAME }}
+          JOB_TITLE: ${{ secrets.JOB_TITLE }}
+          COMPANY_NAME: ${{ secrets.COMPANY_NAME }}
+          ASSIGNED_BY: ${{ secrets.ASSIGNED_BY }}
+          WORK_HOURS: ${{ secrets.WORK_HOURS }}
         run: npm run prod

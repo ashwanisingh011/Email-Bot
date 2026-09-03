@@ -1,6 +1,14 @@
 import {GoogleGenerativeAI} from "@google/generative-ai";
 import {ActivityReport} from "./github";
 
+export interface UserProfile {
+    developerName: string;
+    jobTitle: string;
+    companyName: string;
+    assignedBy: string;
+    workHours: string;
+}
+
 function getErrorReason(err: any): { isRetriable: boolean; reason: string } {
     const name = err?.name || "";
     const msg = err?.message || "";
@@ -44,7 +52,7 @@ async function callWithRetry(fn: () => Promise<any>, retries: number = 3, delayM
     }
 }
 
-export async function generateReport(apiKey: string, activity: ActivityReport): Promise<{subject: string, body: string}> {
+export async function generateReport(apiKey: string, activity: ActivityReport, profile: UserProfile): Promise<{subject: string, body: string}> {
     const genAI = new GoogleGenerativeAI(apiKey);
 
     const now = new Date();
@@ -64,7 +72,8 @@ export async function generateReport(apiKey: string, activity: ActivityReport): 
     }).replace(/\//g, "-");
 
 
-    const prompt = `You are creating a formal Daily Status Report for Ashwani Singh, Full Stack Developer Intern at Tierce India Pvt Ltd.
+
+    const prompt = `You are creating a formal Daily Status Report for ${profile.developerName}, ${profile.jobTitle} at ${profile.companyName}.
 Date: ${dateFormattedDisplay}
 
 Raw Developer Activity Today:
@@ -74,8 +83,8 @@ Commits: ${JSON.stringify(activity.commits, null, 2)}
 Requirements:
 - Analyze the raw activity (PR titles, descriptions, and commit logs).
 - Generate a technical, professional report matching the exact 6-part schema:
-  1) TODAY'S TASKS ASSIGNED (Assigned By: Vaishali Patel, Deadline: ${dateFormattedSubject})
-  2) WORK COMPLETED TODAY (WITH PROOF) (Include technical points, PR URLs as proof, Time Taken: 8 Hours)
+  1) TODAY'S TASKS ASSIGNED (Assigned By: ${profile.assignedBy}, Deadline: ${dateFormattedSubject})
+  2) WORK COMPLETED TODAY (WITH PROOF) (Include technical points, PR URLs as proof, Time Taken: ${profile.workHours} Hours)
   3) PENDING WORK (WITH REASON + NEXT ACTION)
   4) BLOCKERS / SUPPORT REQUIRED (IF ANY)
   5) DAILY OUTPUT SUMMARY
@@ -83,13 +92,14 @@ Requirements:
 
 - Close the body text with:
 Regards,
-Ashwani Singh
-Full Stack Developer Intern
-Tierce India Pvt Ltd
+${profile.developerName}
+${profile.jobTitle}
+${profile.companyName}
+
 
 Output Format:
 Return a strictly valid JSON object with keys "subject" and "body".
-Subject format: "Daily Status Report - ${dateFormattedSubject} - Ashwani Singh (Brief Technical Highlight)"
+Subject format: "Daily Status Report - ${dateFormattedSubject} - ${profile.developerName} (Brief Technical Highlight)"
 `;
 
     // Cascade through active Gemini 3 family models if Google API is experiencing 503 high demand or 429 rate limit
