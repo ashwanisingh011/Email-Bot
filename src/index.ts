@@ -16,6 +16,7 @@ function validateEnv() {
     'SENDER_EMAIL',
     'GMAIL_APP_PASSWORD',
     'GITHUB_USERNAME',
+    'TARGET_REPOS',
     'RECIPIENTS',
     'DEVELOPER_NAME',
     'JOB_TITLE',
