@@ -5,7 +5,8 @@ export async function sendDailyEmail(
     appPassword: string,
     recipients: string[],
     subject: string,
-    body: string
+    body: string,
+    developerName: string
 ){
     const transporter = nodemailer.createTransport({
         service: "gmail",
@@ -16,7 +17,7 @@ export async function sendDailyEmail(
     });
 
     await transporter.sendMail({
-        from: `"Ashwani Singh" <${senderEmail}>`,
+        from: `"${developerName}" <${senderEmail}>`,
         to: recipients,
         subject: subject,
         text: body,
