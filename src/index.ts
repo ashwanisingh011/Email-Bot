@@ -17,6 +17,11 @@ function validateEnv() {
     'GMAIL_APP_PASSWORD',
     'GITHUB_USERNAME',
     'RECIPIENTS',
+    'DEVELOPER_NAME',
+    'JOB_TITLE',
+    'COMPANY_NAME',
+    'ASSIGNED_BY',
+    'WORK_HOURS'
   ];
 
   const missing = required.filter((key) => !process.env[key]);
@@ -38,16 +43,24 @@ async function main() {
   const repos = (process.env.TARGET_REPOS || "").split(",").map((r) => r.trim());
   const recipients = (process.env.RECIPIENTS || "").split(",").map((r) => r.trim());
 
+  const profile = {
+    developerName: process.env.DEVELOPER_NAME!,
+    jobTitle: process.env.JOB_TITLE!,
+    companyName: process.env.COMPANY_NAME!,
+    assignedBy: process.env.ASSIGNED_BY!,
+    workHours: process.env.WORK_HOURS!,
+  }
+
   console.log("1. Fetching GitHub activity for today...");
   const activity = await fetchDailyActivity(pat, username, repos);
   console.log(`Found ${activity.prs.length} PR(s) and ${activity.commits.length} commit(s).`);
 
   console.log("2. Generating AI daily status report...");
-  const report = await generateReport(geminiKey, activity);
+  const report = await generateReport(geminiKey, activity, profile);
   console.log("Generated Subject:", report.subject);
 
   console.log("3. Dispatching email report...");
-  await sendDailyEmail(sender, appPass, recipients, report.subject, report.body);
+  await sendDailyEmail(sender, appPass, recipients, report.subject, report.body, profile.developerName);
 
   console.log(" Daily status report dispatched successfully!");
 }
