@@ -40,7 +40,7 @@ async function main() {
   const geminiKey = process.env.GEMINI_API_KEY!;
   const sender = process.env.SENDER_EMAIL!;
   const appPass = process.env.GMAIL_APP_PASSWORD!;
-  const username = process.env.GITHUB_USERNAME!;
+  const username = process.env.GH_USERNAME!;
   const repos = (process.env.TARGET_REPOS || "").split(",").map((r) => r.trim());
   const recipients = (process.env.RECIPIENTS || "").split(",").map((r) => r.trim());
 
