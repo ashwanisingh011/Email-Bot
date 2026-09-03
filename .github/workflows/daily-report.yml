@@ -33,7 +33,7 @@ jobs:
           SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           TARGET_REPOS: ${{ secrets.TARGET_REPOS }}
-          GITHUB_USERNAME: ${{ secrets.GITHUB_USERNAME }}
+          GH_USERNAME: ${{ secrets.GITHUB_USERNAME }}
           RECIPIENTS: ${{ secrets.RECIPIENTS }}
           DEVELOPER_NAME: ${{ secrets.DEVELOPER_NAME }}
           JOB_TITLE: ${{ secrets.JOB_TITLE }}
