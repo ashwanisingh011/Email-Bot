@@ -15,7 +15,7 @@ function validateEnv() {
     'GEMINI_API_KEY',
     'SENDER_EMAIL',
     'GMAIL_APP_PASSWORD',
-    'GITHUB_USERNAME',
+    'GH_USERNAME',
     'TARGET_REPOS',
     'RECIPIENTS',
     'DEVELOPER_NAME',
