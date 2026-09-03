@@ -54,7 +54,32 @@ export async function fetchDailyActivity(
                     url: pr.html_url,
                     state: pr.merged_at ? "merged" : pr.state,
                     repo: fullRepo,
-                })
+                });
+                try {
+                    const {data: prCommits} = await octokit.rest.pulls.listCommits({
+                        owner,
+                        repo,
+                        pull_number: pr.number,
+                        per_page: 100
+                    });
+
+                    for(const c of prCommits){
+                        const isAuthor = c.author?.login?.toLowerCase() === username.toLowerCase() ||
+                        c.commit.author?.name?.toLowerCase() === username.toLowerCase();
+                        
+                        // Capture commit messages
+                        if(isAuthor && c.commit?.message){
+                            // Extract just the first line of the commit message (clean subject)
+                            const firstLine = c.commit.message.split("\n")[0].trim();
+                            const commitEntry = `[${repo} #${pr.number}] ${firstLine}`;
+                            if(!activities.commits.includes(commitEntry)){
+                                activities.commits.push(commitEntry);
+                            }
+                        }
+                    }
+                } catch (prErr) {
+                    console.warn(`Could not fetch commits for PR #${pr.number}:`, prErr);
+                }
             }
 
             // 2. Fetch Commits by Author

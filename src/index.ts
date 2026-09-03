@@ -43,7 +43,7 @@ async function main() {
   const username = process.env.GH_USERNAME!;
   const repos = (process.env.TARGET_REPOS || "").split(",").map((r) => r.trim());
   const recipients = (process.env.RECIPIENTS || "").split(",").map((r) => r.trim());
-
+  const ccRecipients = (process.env.CC_RECIPIENTS || "").split(",").map((r) => r.trim()).filter(Boolean);
   const profile = {
     developerName: process.env.DEVELOPER_NAME!,
     jobTitle: process.env.JOB_TITLE!,
@@ -61,7 +61,7 @@ async function main() {
   console.log("Generated Subject:", report.subject);
 
   console.log("3. Dispatching email report...");
-  await sendDailyEmail(sender, appPass, recipients, report.subject, report.body, profile.developerName);
+  await sendDailyEmail(sender, appPass, recipients, report.subject, report.body, profile.developerName, ccRecipients);
 
   console.log(" Daily status report dispatched successfully!");
 }
