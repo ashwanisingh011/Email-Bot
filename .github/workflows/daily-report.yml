@@ -35,6 +35,7 @@ jobs:
           TARGET_REPOS: ${{ secrets.TARGET_REPOS }}
           GH_USERNAME: ${{ secrets.GH_USERNAME }}
           RECIPIENTS: ${{ secrets.RECIPIENTS }}
+          CC_RECIPIENTS: ${{ secrets.CC_RECIPIENTS }}
           DEVELOPER_NAME: ${{ secrets.DEVELOPER_NAME }}
           JOB_TITLE: ${{ secrets.JOB_TITLE }}
           COMPANY_NAME: ${{ secrets.COMPANY_NAME }}
