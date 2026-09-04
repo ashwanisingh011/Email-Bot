@@ -55,6 +55,10 @@ async function main() {
   console.log("1. Fetching GitHub activity for today...");
   const activity = await fetchDailyActivity(pat, username, repos);
   console.log(`Found ${activity.prs.length} PR(s) and ${activity.commits.length} commit(s).`);
+  if (activity.prs.length === 0 && activity.commits.length === 0){
+    console.log("☕ No developer activity found for today (Holiday / Day off). Skipping report generation and email dispatch.");
+    return;
+  }
 
   console.log("2. Generating AI daily status report...");
   const report = await generateReport(geminiKey, activity, profile);
