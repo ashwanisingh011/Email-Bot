@@ -202,17 +202,35 @@ npm run prod
 
 ---
 
-## Automated Cloud Scheduling Setup
+## Running the Workflow: Manual vs. Automated
 
-To guarantee your report dispatches at **6:30 PM IST sharp** every weekday without delays or reliance on a local laptop:
+Once your GitHub Secrets are added, you can execute the bot in two ways: **manually on-demand with one click** (zero extra setup), or **automatically on a daily schedule**.
 
-### 1. Add GitHub Repository Secrets
+### 1. Add GitHub Repository Secrets (Required for Both)
+
 In your GitHub repository:
 1. Navigate to **Settings -> Secrets and variables -> Actions**.
 2. Click **New repository secret** for each variable listed in the [Environment Variables Reference](#environment-variables-reference).
 
-### 2. Configure cron-job.org
-GitHub Actions' internal cron queue often delays free jobs during peak hours. Using a free webhook cron triggers `workflow_dispatch` within **2 seconds**:
+---
+
+### Option A: Manual Trigger via GitHub Actions (Zero Extra Setup)
+
+If you do not want to configure an external cron service or prefer to generate and send your report on demand whenever your workday wraps up:
+
+1. Go to your repository on GitHub and open the **Actions** tab.
+2. In the left sidebar, click **Automated Daily Status Report**.
+3. Click the **Run workflow** dropdown button on the right side.
+4. Leave the branch set to **`main`** and click the green **Run workflow** button.
+5. The bot executes immediately, inspects today's activity, generates the AI report, and delivers the email within 25–30 seconds.
+
+---
+
+### Option B: Automated Cloud Scheduling via cron-job.org
+
+If you want the report to run completely autonomously at **6:30 PM IST sharp** every weekday without touching anything:
+
+GitHub Actions' internal cron queue often delays free-tier jobs during peak hours. Using a free webhook cron triggers `workflow_dispatch` within **2 seconds**:
 
 1. Create a free account at [cron-job.org](https://cron-job.org).
 2. Click **Create Cronjob**:
