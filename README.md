@@ -94,80 +94,85 @@ Regards,
 
 ## Step-by-Step API Key & Credential Guide
 
-To run this bot, you need three credentials. Click the guidance dropdowns below for complete step-by-step instructions:
+To get this bot running quickly, follow these direct step-by-step setup guides for each required credential:
 
-<details>
-<summary><b>1. GitHub Personal Access Token (GH_PAT)</b></summary>
+### 1. How to Generate GitHub Personal Access Token (`GH_PAT`)
 
-### Why it is needed:
-Allows the bot to query your pull requests, branch commits, and repository activity across public or private company repositories.
+The bot uses this token to inspect pull requests, branch commits, and repository activity across your company repositories and personal forks.
 
-### Step-by-Step:
-1. Go directly to [GitHub Personal Access Tokens (Classic)](https://github.com/settings/tokens).
+1. Open [GitHub Personal Access Tokens (Classic)](https://github.com/settings/tokens).
 2. Click **Generate new token** -> **Generate new token (classic)**.
-3. Set the **Note** to `daily-report-bot`.
-4. Choose an expiration (e.g. `90 days` or `No expiration` for service accounts).
-5. Select the following scopes:
-   * **`repo`** (Full control of private repositories — required to inspect private company PRs and commits).
-   * **`read:org`** (Read org and team membership — required if your target repo is under an organization).
-6. Click **Generate token** at the bottom.
-7. **Copy your token immediately** (`ghp_...`).
-8. *(Optional - For Organization SSO)*: If your company enforces SAML Single Sign-On, click **Configure SSO** next to your newly generated token and click **Authorize** for your organization.
-</details>
+3. In the **Note** field, enter: `daily-report-bot`.
+4. Choose an expiration period (e.g. `90 days` or `No expiration` for dedicated automation).
+5. Select the required permission scopes:
+   * **`repo`** (Full control of private repositories - required to read PRs and commits from private repos).
+   * **`read:org`** (Read organization data - required if your repository is owned by an organization).
+6. Scroll to the bottom and click **Generate token**.
+7. **Copy your token immediately** (`ghp_...`) and save it securely.
+8. *(Important for Organization SSO)*: If your company organization enforces SAML/SSO, click **Configure SSO** next to your newly generated token and click **Authorize** for your organization.
 
-<details>
-<summary><b>2. Google Gemini API Key (GEMINI_API_KEY)</b></summary>
+---
 
-### Why it is needed:
-Powers the AI engine that analyzes raw commits and generates the formal structured report.
+### 2. How to Generate Google Gemini API Key (`GEMINI_API_KEY`)
 
-### Step-by-Step:
-1. Go to [Google AI Studio API Keys](https://aistudio.google.com/app/apikey).
+The bot uses the Google Gemini API to analyze raw developer commits and draft formal structured status reports.
+
+1. Open [Google AI Studio API Keys](https://aistudio.google.com/app/apikey).
 2. Sign in with your Google account.
 3. Click **Create API Key**.
-4. Choose an existing Google Cloud project or select **Create API key in new project**.
+4. Select an existing Google Cloud project or choose **Create API key in new project**.
 5. **Copy the generated API key** (`AIzaSy...`).
-6. *(Note)*: Free tier includes generous rate limits suitable for multiple daily report executions.
-</details>
+6. *(Note)*: Google's free tier provides generous limits, allowing multiple daily report runs at zero cost.
 
-<details>
-<summary><b>3. Gmail App Password (GMAIL_APP_PASSWORD)</b></summary>
+---
 
-### Why it is needed:
-Allows Nodemailer to send emails through Gmail's SMTP servers securely without exposing your main Google account password.
+### 3. Note on `GEMINI_MODEL` (Optional - Built-in Multi-Model Fallback)
 
-### Step-by-Step:
-1. Ensure **2-Step Verification** is enabled on your Google Account:
-   * Visit [Google Security Settings](https://myaccount.google.com/security) -> Turn on **2-Step Verification**.
-2. Go directly to [Google App Passwords](https://myaccount.google.com/apppasswords).
-3. Enter an app name, e.g. `Daily Report Bot`.
+**You can keep `GEMINI_MODEL` unset!** 
+
+You do **not** need to configure this variable. Inside `src/generator.ts`, the bot has a built-in, self-healing multi-model fallback cascade using three active Gemini 3 family models:
+1. **Primary**: `gemini-3.6-flash`
+2. **Secondary**: `gemini-3.7-flash` (used if primary experiences a 503 capacity spike or timeout)
+3. **Tertiary**: `gemini-3.5-flash` (used if secondary experiences temporary high load)
+
+Only provide `GEMINI_MODEL` if you explicitly wish to override this default cascade with a custom model.
+
+---
+
+### 4. How to Generate Gmail App Password (`GMAIL_APP_PASSWORD`)
+
+The bot uses Gmail SMTP via Nodemailer to deliver the final report to your manager, leads, and team.
+
+1. Ensure **2-Step Verification** is turned on for your Google Account:
+   * Visit [Google Account Security](https://myaccount.google.com/security) -> Turn on **2-Step Verification**.
+2. Open [Google App Passwords](https://myaccount.google.com/apppasswords).
+3. In the app name box, enter: `Daily Report Bot`.
 4. Click **Create**.
 5. Google will display a **16-character passcode** (e.g. `abcd efgh ijkl mnop`).
 6. **Copy this 16-character code** (spaces can be omitted: `abcdefghijklmnop`).
-</details>
 
 ---
 
 ## Environment Variables Reference
 
-Create a `.env` file for local testing or configure these as **GitHub Secrets** under your repo's **Settings -> Secrets and variables -> Actions**:
+Configure these in your local `.env` file or as **GitHub Secrets** under **Settings -> Secrets and variables -> Actions**:
 
 | Variable Name | Required | Description | Example |
 | :--- | :---: | :--- | :--- |
-| `GH_PAT` | **Yes** | GitHub Personal Access Token | `ghp_xxxxxxxxxxxx` |
-| `GH_USERNAME` | **Yes** | Your GitHub username | `octocat` |
-| `TARGET_REPOS` | **Yes** | Comma-separated target repos (supports company repo + fork) | `CompanyOrg/ProjectRepo,yourusername/ProjectRepo` |
-| `GEMINI_API_KEY` | **Yes** | Google Gemini API Key | `AIzaSyxxxxxxxxxx` |
-| `GEMINI_MODEL` | No | Model override (defaults to `gemini-3.6-flash`) | `gemini-3.6-flash` |
-| `SENDER_EMAIL` | **Yes** | Gmail address used to dispatch emails | `developer@gmail.com` |
+| `GH_PAT` | **Yes** | GitHub Personal Access Token with `repo` scope | `ghp_xxxxxxxxxxxx` |
+| `GH_USERNAME` | **Yes** | Your GitHub username (matches author of commits/PRs) | `ashwanisingh011` |
+| `TARGET_REPOS` | **Yes** | Target repositories (supports company repo + fork) | `TierceIndia/OCTYRAA,ashwanisingh011/OCTYRAA` |
+| `GEMINI_API_KEY` | **Yes** | Google Gemini API Key from Google AI Studio | `AIzaSyxxxxxxxxxx` |
+| `GEMINI_MODEL` | **Optional** | Leave empty to use default 3-model fallback (`3.6` -> `3.7` -> `3.5`) | `gemini-3.6-flash` |
+| `SENDER_EMAIL` | **Yes** | Gmail address used to dispatch emails | `developer@tierceindia.com` |
 | `GMAIL_APP_PASSWORD` | **Yes** | 16-character Google App Password | `abcdefghijklmnop` |
-| `RECIPIENTS` | **Yes** | Primary email addresses separated by commas | `lead@company.com,manager@company.com` |
-| `CC_RECIPIENTS` | No | CC email addresses separated by commas | `colleague@company.com` |
-| `DEVELOPER_NAME` | **Yes** | Your full name for reports & email headers | `Alex Mercer` |
-| `JOB_TITLE` | **Yes** | Your official job title | `Full Stack Developer Intern` |
-| `COMPANY_NAME` | **Yes** | Organization name | `Acme Corp Pvt Ltd` |
-| `ASSIGNED_BY` | **Yes** | Your manager, supervisor, or mentor's name | `Jane Doe` |
-| `WORK_HOURS` | **Yes** | Reported daily work hours | `8 Hours` |
+| `RECIPIENTS` | **Yes** | Primary recipient email addresses separated by commas | `lead@company.com,manager@company.com` |
+| `CC_RECIPIENTS` | **Optional** | CC email addresses separated by commas | `colleague@company.com` |
+| `DEVELOPER_NAME` | **Yes** | Your full name for reports & email headers | `Ashwani Singh` |
+| `JOB_TITLE` | **Yes** | Your official job designation | `Full Stack Developer Intern` |
+| `COMPANY_NAME` | **Yes** | Your organization or company name | `Tierce India Pvt Ltd` |
+| `ASSIGNED_BY` | **Yes** | Your manager, supervisor, or mentor's name | `Vaishali Patel` |
+| `WORK_HOURS` | **Yes** | Daily work hours reported in completed work section | `8 Hours` |
 
 ---
 
