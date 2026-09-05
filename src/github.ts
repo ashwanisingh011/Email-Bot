@@ -20,7 +20,7 @@ export async function fetchDailyActivity(
 ):Promise<ActivityReport> {
     const octokit = new Octokit({ auth: pat});
 
-    // Set start of today in IST
+    
     const now = new Date();
     const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
 
